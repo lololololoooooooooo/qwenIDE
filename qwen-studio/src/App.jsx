@@ -1,4 +1,3 @@
-// src/App.jsx
 import { useState } from 'react';
 import FileTree from './components/FileTree';
 import CodeEditor from './components/Editor';
@@ -13,13 +12,11 @@ export default function App() {
   const [code, setCode] = useState(files['main.py']);
   const [logs, setLogs] = useState('');
 
-  // Save current file
   const saveCurrent = () => {
     setFiles(prev => ({ ...prev, [currentFile]: code }));
     setLogs('💾 Saved ' + currentFile);
   };
 
-  // New file
   const createFile = (name) => {
     if (!files[name]) {
       setFiles(prev => ({ ...prev, [name]: '' }));
@@ -28,7 +25,6 @@ export default function App() {
     }
   };
 
-  // Delete file
   const deleteFile = (name) => {
     if (Object.keys(files).length > 1) {
       setFiles(prev => {
@@ -44,7 +40,6 @@ export default function App() {
     }
   };
 
-  // Ask AI
   const askAI = async (message) => {
     const allFilesContext = Object.entries(files)
       .map(([path, content]) => `--- FILE: ${path} ---\n${content}`)
@@ -67,31 +62,51 @@ Respond ONLY with @@edit@@ / @@create@@ / @@log@@.
 `;
 
     try {
-      const res = await fetch('/api/qwen', {
+      setLogs(prev => prev + '\n\n🧠 Processing AI response...');
+      const res = await fetch('/.netlify/functions/qwen-proxy', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: prompt })
       });
 
+      if (!res.ok) {
+        throw new Error(`API error: ${res.status}`);
+      }
+
       const data = await res.json();
       const content = data.content;
 
-      const edits = [...content.matchAll(/@@edit:(.*?)@@\n([\s\S]*?)(?=@@|$)/g)].map(m => ({ path: m[1], content: m[2].trim() }));
-      const creates = [...content.matchAll(/@@create:(.*?)@@\n([\s\S]*?)(?=@@|$)/g)].map(m => ({ path: m[1], content: m[2].trim() }));
+      const edits = [...content.matchAll(/@@edit:(.*?)@@\n([\s\S]*?)(?=@@|$)/g)].map(m => ({ 
+        path: m[1], 
+        content: m[2].trim() 
+      }));
+      const creates = [...content.matchAll(/@@create:(.*?)@@\n([\s\S]*?)(?=@@|$)/g)].map(m => ({ 
+        path: m[1], 
+        content: m[2].trim() 
+      }));
       const logMatch = content.match(/@@log@@\n(.*?)(?=@@|$)/s);
       const log = logMatch ? logMatch[1].trim() : '✅ Done.';
 
-      edits.forEach(e => { files[e.path] = e.content; });
-      creates.forEach(c => { files[c.path] = c.content; });
+      // Update files state immutably
+      setFiles(prev => {
+        const newFiles = { ...prev };
+        edits.forEach(e => { newFiles[e.path] = e.content; });
+        creates.forEach(c => { newFiles[c.path] = c.content; });
+        return newFiles;
+      });
 
-      setFiles({ ...files });
-      if (edits.some(e => e.path === currentFile)) {
-        setCode(files[currentFile]);
+      // Update editor if current file was edited
+      const currentFileEdit = edits.find(e => e.path === currentFile);
+      if (currentFileEdit) {
+        setCode(currentFileEdit.content);
       }
 
+      setLogs(prev => prev + '\n\n' + log);
       return { logs: log };
     } catch (err) {
-      throw new Error("AI request failed: " + err.message);
+      const errorMsg = `❌ AI request failed: ${err.message}`;
+      setLogs(prev => prev + '\n\n' + errorMsg);
+      throw new Error(errorMsg);
     }
   };
 
@@ -110,7 +125,7 @@ Respond ONLY with @@edit@@ / @@create@@ / @@log@@.
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
         <CodeEditor value={code} onChange={setCode} />
-        <AICommand onAsk={askAI} />
+        <AICommand onAsk={askAI} logs={logs} setLogs={setLogs} />
       </div>
     </div>
   );
