@@ -1,1 +1,19 @@
 
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Background -->
+  <rect width="100" height="100" rx="20" fill="#1e1e1e"/>
+  
+  <!-- Code Brackets -->
+  <text x="50" y="65" font-family="monospace" font-size="60" font-weight="bold" text-anchor="middle" fill="#007acc">
+    {}
+  </text>
+  
+  <!-- AI Spark -->
+  <circle cx="65" cy="35" r="6" fill="#ffcc00"/>
+  <path d="M65 28v14M58 35h14" stroke="#000" stroke-width="1" opacity="0.3"/>
+
+  <!-- Glow effect -->
+  <circle cx="65" cy="35" r="10" fill="none" stroke="#ffcc00" stroke-width="2" stroke-opacity="0.5">
+    <animate attributeName="r" values="8;12;8" dur="2s" repeatCount="indefinite"/>
+  </circle>
+</svg>
