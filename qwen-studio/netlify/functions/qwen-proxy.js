@@ -6,7 +6,7 @@ exports.handler = async (event, context) => {
     return { statusCode: 405, body: JSON.stringify({ error: "Method not allowed" }) };
   }
 
-  const { message, model = "qwen/qwen3-coder:free" } = JSON.parse(event.body);
+  const { message } = JSON.parse(event.body);
 
   if (!openRouterApiKey) {
     return {
@@ -15,28 +15,17 @@ exports.handler = async (event, context) => {
     };
   }
 
-  // ✅ Clean model list with fallback
-  const MODEL_FALLBACK = [
-    "qwen/qwen3-coder:free",
-    "google/gemma-7b-it:free",
-    "microsoft/phi-3-mini-128k-instruct:free",
-    "mistralai/mistral-7b-instruct:free"
-  ];
-
-  const modelToUse = MODEL_FALLBACK.includes(model) ? model : MODEL_FALLBACK[0];
-
   try {
     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      // ✅ Removed extra space
       method: "POST",
       headers: {
         "Authorization": `Bearer ${openRouterApiKey}`,
         "Content-Type": "application/json",
-        "HTTP-Referer": "https://qwen-ide.netlify.app", // ✅ Removed extra space
+        "HTTP-Referer": "https://qwen-ide.netlify.app",
         "X-Title": "QwenStudio"
       },
       body: JSON.stringify({
-        model: modelToUse,
+        model: "qwen/qwen3-coder:free",
         messages: [{ role: "user", content: message }],
         max_tokens: 2048,
         temperature: 0.5
@@ -61,7 +50,7 @@ exports.handler = async (event, context) => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ 
         content: data.choices?.[0]?.message?.content || "No response generated.",
-        model: data.model || modelToUse
+        model: data.model || "qwen/qwen3-coder:free"
       })
     };
 
