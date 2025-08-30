@@ -11,4 +11,14 @@ export default defineConfig({
   build: {
     outDir: 'dist',
   },
+  export default defineConfig({
+  plugins: [react()],
+  server: {
+    port: 3000,
+    open: true,
+  },
+  build: {
+    outDir: 'dist',
+    assetsInclude: ['src/index.html'], // Explicitly include index.html
+  },
 });
